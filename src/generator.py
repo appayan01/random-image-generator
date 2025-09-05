@@ -1,24 +1,26 @@
+---
+
+### **3️⃣ src/generator.py**
+```python
 import torch
-from generator import Generator
-import matplotlib.pyplot as plt
-import os
+import torch.nn as nn
 
-latent_dim = 100
-generator = Generator(latent_dim)
-generator.load_state_dict(torch.load("outputs/models/generator.pth"))
-generator.eval()
-
-z = torch.randn(25, latent_dim)
-gen_imgs = generator(z)
-
-os.makedirs("outputs/generated_images", exist_ok=True)
-
-fig, axs = plt.subplots(5,5, figsize=(5,5))
-cnt = 0
-for i in range(5):
-    for j in range(5):
-        axs[i,j].imshow(gen_imgs[cnt,0].detach().numpy(), cmap='gray')
-        axs[i,j].axis('off')
-        cnt += 1
-plt.savefig("outputs/generated_images/sample.png")
-plt.show()
+class Generator(nn.Module):
+    def __init__(self, latent_dim=100, img_shape=(1,28,28)):
+        super().__init__()
+        self.img_shape = img_shape
+        self.model = nn.Sequential(
+            nn.Linear(latent_dim, 128),
+            nn.ReLU(True),
+            nn.Linear(128, 256),
+            nn.ReLU(True),
+            nn.Linear(256, 512),
+            nn.ReLU(True),
+            nn.Linear(512, int(torch.prod(torch.tensor(img_shape)))),
+            nn.Tanh()
+        )
+        
+    def forward(self, z):
+        img = self.model(z)
+        img = img.view(img.size(0), *self.img_shape)
+        return img
